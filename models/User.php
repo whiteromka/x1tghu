@@ -2,103 +2,70 @@
 
 namespace app\models;
 
-class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
+use Yii;
+use yii\db\ActiveQuery;
+use yii\db\ActiveRecord;
+
+/**
+ * This is the model class for table "user".
+ *
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property string $ip
+ * @property int|null $created_at
+ * @property int|null $updated_at
+ *
+ * @property Message[] $messages
+ */
+class User extends ActiveRecord
 {
-    public $id;
-    public $username;
-    public $password;
-    public $authKey;
-    public $accessToken;
-
-    private static $users = [
-        '100' => [
-            'id' => '100',
-            'username' => 'admin',
-            'password' => 'admin',
-            'authKey' => 'test100key',
-            'accessToken' => '100-token',
-        ],
-        '101' => [
-            'id' => '101',
-            'username' => 'demo',
-            'password' => 'demo',
-            'authKey' => 'test101key',
-            'accessToken' => '101-token',
-        ],
-    ];
-
-
     /**
      * {@inheritdoc}
      */
-    public static function findIdentity($id)
+    public static function tableName()
     {
-        return isset(self::$users[$id]) ? new static(self::$users[$id]) : null;
+        return 'user';
     }
 
     /**
      * {@inheritdoc}
      */
-    public static function findIdentityByAccessToken($token, $type = null)
+    public function rules()
     {
-        foreach (self::$users as $user) {
-            if ($user['accessToken'] === $token) {
-                return new static($user);
-            }
-        }
-
-        return null;
+        return [
+            [['created_at', 'updated_at'], 'default', 'value' => null],
+            [['name', 'email', 'ip'], 'required'],
+            [['created_at', 'updated_at'], 'integer'],
+            [['name'], 'string', 'max' => 15],
+            [['email'], 'string', 'max' => 100],
+            [['ip'], 'string', 'max' => 255],
+            [['email'], 'unique'],
+        ];
     }
 
     /**
-     * Finds user by username
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'name' => 'Имя',
+            'email' => 'Email',
+            'ip' => 'Ip',
+            'created_at' => 'Создано',
+            'updated_at' => 'Обновлено',
+        ];
+    }
+
+    /**
+     * Gets query for [[Messages]].
      *
-     * @param string $username
-     * @return static|null
+     * @return ActiveQuery
      */
-    public static function findByUsername($username)
+    public function getMessages()
     {
-        foreach (self::$users as $user) {
-            if (strcasecmp($user['username'], $username) === 0) {
-                return new static($user);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getId()
-    {
-        return $this->id;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getAuthKey()
-    {
-        return $this->authKey;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function validateAuthKey($authKey)
-    {
-        return $this->authKey === $authKey;
-    }
-
-    /**
-     * Validates password
-     *
-     * @param string $password password to validate
-     * @return bool if password provided is valid for current user
-     */
-    public function validatePassword($password)
-    {
-        return $this->password === $password;
+        return $this->hasMany(Message::class, ['user_id' => 'id']);
     }
 }
