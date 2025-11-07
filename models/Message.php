@@ -2,26 +2,63 @@
 
 namespace app\models;
 
-use Yii;
-use yii\db\ActiveQuery;
+use app\helpers\HtmlPurifierHelper;
+use app\services\EmailService;
+use yii\behaviors\TimestampBehavior;
+use yii\db\ActiveRecord;
+use yii\db\BaseActiveRecord;
 
 /**
  * This is the model class for table "message".
  *
  * @property int $id
- * @property int $user_id
+ * @property string $name
+ * @property string $email
+ * @property int $ip
  * @property string $text
  * @property string $link Ссылка на редактирование сообщения
- * @property int $status Статус: 1 активна, 2 удалена
+ * @property int $status Статус: 1 активна, 0 удалена
  * @property int|null $created_at
  * @property int|null $updated_at
- *
- * @property User $user
  */
-class Message extends \yii\db\ActiveRecord
+class Message extends ActiveRecord
 {
-    const STATUS_ACTIVE = 1;
-    const STATUS_DELETED = 0;
+    private const TIME_EDIT = 43200; // 12 часов
+    private const TIME_DELETE = 1209600; // 14 дней
+    public const STATUS_ACTIVE = 1;
+    public const STATUS_DELETED = 0;
+
+    /** @var int Виртуальное свойство для вывода кол-ва всех постов */
+    public $postsCount;
+
+    public function init()
+    {
+        parent::init();
+        $this->on(self::EVENT_AFTER_INSERT, [$this, 'sendEmailNotification']);
+    }
+
+    public function sendEmailNotification($event)
+    {
+        if ($this->status === self::STATUS_ACTIVE) {
+            EmailService::sendMessageLinks($this);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function behaviors()
+    {
+        return [
+            [
+                'class' => TimestampBehavior::class,
+                'attributes' => [
+                    BaseActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
+                    BaseActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
+                ],
+            ],
+        ];
+    }
 
     /**
      * {@inheritdoc}
@@ -39,37 +76,36 @@ class Message extends \yii\db\ActiveRecord
         return [
             [['created_at', 'updated_at'], 'default', 'value' => null],
             [['status'], 'default', 'value' => 1],
-            [['user_id', 'text', 'link'], 'required'],
-            [['user_id', 'status', 'created_at', 'updated_at'], 'integer'],
-            [['text'], 'string', 'max' => 1000],
-            [['link'], 'string', 'max' => 250],
-            [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
+            [['name', 'email', 'ip', 'text', 'link'], 'required'],
+            [['status', 'created_at', 'updated_at'], 'integer'],
+            [['ip', 'email'], 'string'],
+            ['email', 'email'],
+            ['email', 'string', 'max' => 255],
+            [['name'], 'string', 'min' => 2, 'max' => 15],
+            [['text'], 'string', 'min' => 5, 'max' => 1000],
+            [
+                'text',
+                'filter',
+                'filter' => function($value) {
+                    return (new HtmlPurifierHelper())->purify($value);
+                }
+            ],
         ];
     }
 
     /**
-     * {@inheritdoc}
+     * Можно ли редактировать сейчас
      */
-    public function attributeLabels()
+    public function canEdit(): bool
     {
-        return [
-            'id' => 'ID',
-            'user_id' => 'User ID',
-            'text' => 'Текст',
-            'link' => 'Ссылка',
-            'status' => 'Статус',
-            'created_at' => 'Создано',
-            'updated_at' => 'Обновлено',
-        ];
+        return (time() - $this->created_at) < self::TIME_EDIT;
     }
 
     /**
-     * Gets query for [[User]].
-     *
-     * @return ActiveQuery
+     * Можно ли удалить сейчас
      */
-    public function getUser()
+    public function canDelete(): bool
     {
-        return $this->hasOne(User::class, ['id' => 'user_id']);
+        return (time() - $this->created_at) < self::TIME_DELETE;
     }
 }

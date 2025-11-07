@@ -1,52 +1,69 @@
 <?php
 
 /** @var yii\web\View $this */
+/** @var Message[] $messages */
+/** @var MessageForm $messageForm */
+/** @var ActiveForm $form */
+/** @var Pagination $pages */
 
-$this->title = 'My Yii Application';
+use app\helpers\IpHelper;
+use app\models\forms\MessageForm;
+use app\models\Message;
+use yii\bootstrap5\ActiveForm;
+use yii\bootstrap5\LinkPager;
+use yii\captcha\Captcha;
+use yii\data\Pagination;
+use yii\helpers\Html;
 
 ?>
-<div class="site-index">
-
-    <div class="jumbotron text-center bg-transparent mt-5 mb-5">
-        <h1 class="display-4">Congratulations!</h1>
-
-        <p class="lead">You have successfully created your Yii-powered application.</p>
-
-        <p><a class="btn btn-lg btn-success" href="https://www.yiiframework.com">Get started with Yii</a></p>
-    </div>
-
+<div>
     <div class="body-content">
-
         <div class="row">
-            <div class="col-lg-4 mb-3">
-                <h2>Heading</h2>
-
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et
-                    dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-                    ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-                    fugiat nulla pariatur.</p>
-
-                <p><a class="btn btn-outline-secondary" href="https://www.yiiframework.com/doc/">Yii Documentation &raquo;</a></p>
+            <div class="col-md-7 col-lg-8">
+                <h2>Сообщения пользователей:</h2>
+                <?php foreach ($messages as $message) :?>
+                <div class="card card-default">
+                    <div class="card-body">
+                        <h5 class="card-title"><?= Html::encode($message->name)?></h5>
+                        <p><?= \yii\helpers\HtmlPurifier::process($message->text) ?></p>
+                        <p>
+                            <small class="text-muted">
+                                <?= Yii::$app->formatter->asRelativeTime($message->created_at) ?> |
+                                <?= IpHelper::maskIp($message->ip) ?> |
+                                <?= Yii::t('app', '{n, plural, zero{нет постов} one{# пост} few{# поста} many{# постов} other{# постов}}', [
+                                        'n' => $message->postsCount
+                                    ])
+                                ?>
+                            </small>
+                        </p>
+                    </div>
+                </div>
+                <?php endforeach; ?>
             </div>
-            <div class="col-lg-4 mb-3">
-                <h2>Heading</h2>
 
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et
-                    dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-                    ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-                    fugiat nulla pariatur.</p>
-
-                <p><a class="btn btn-outline-secondary" href="https://www.yiiframework.com/forum/">Yii Forum &raquo;</a></p>
+            <div class="col-md-5 col-lg-4">
+                <h2>Форма:</h2>
+                <?php $form = ActiveForm::begin(['id' => 'message-form']); ?>
+                <?= $form->field($messageForm, 'name') ?>
+                <?= $form->field($messageForm, 'email') ?>
+                <?= $form->field($messageForm, 'text')->textarea(['rows' => 8]) ?>
+                <?= $form->field($messageForm, 'captcha')->widget(Captcha::class, [
+                    'template' => '<div class="row"><div class="col-lg-3">{image}</div><div class="col-lg-6">{input}</div></div>',
+                    'captchaAction' => 'message/captcha',
+                ]) ?>
+                <div class="form-group">
+                    <?= Html::submitButton('Отправить', ['class' => 'btn btn-primary', 'name' => 'contact-button']) ?>
+                </div>
+                <?php ActiveForm::end(); ?>
             </div>
-            <div class="col-lg-4">
-                <h2>Heading</h2>
+        </div>
 
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et
-                    dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-                    ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-                    fugiat nulla pariatur.</p>
-
-                <p><a class="btn btn-outline-secondary" href="https://www.yiiframework.com/extensions/">Yii Extensions &raquo;</a></p>
+        <div class="row m-5">
+            <div class="col-sm-12 ">
+                <?= LinkPager::widget([
+                    'pagination' => $pages,
+                    'options' => ['class' => 'pagination justify-content-center']
+                ]) ?>
             </div>
         </div>
 

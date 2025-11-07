@@ -12,6 +12,7 @@ $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log'],
+    'language' => 'ru-RU',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
@@ -29,13 +30,15 @@ $config = [
             'enableAutoLogin' => true,
         ],
         'errorHandler' => [
-            'errorAction' => 'site/error',
+            'errorAction' => 'message/error',
         ],
         'mailer' => [
-            'class' => \yii\symfonymailer\Mailer::class,
+            'class' => 'yii\symfonymailer\Mailer',
             'viewPath' => '@app/mail',
-            // send all mails to a file by default.
             'useFileTransport' => true,
+            'fileTransportPath' => '@runtime/mail',
+            'htmlLayout' => false,
+            'textLayout' => false,
         ],
         'log' => [
             'traceLevel' => YII_DEBUG ? 3 : 0,
@@ -52,6 +55,9 @@ $config = [
             'showScriptName' => false,
             'rules' => [
                 '/' => 'message/index',
+                '/message/edit/<link:[\w\-]+>' => 'message/edit',
+                '/message/delete/<link:[\w\-]+>' => 'message/delete',
+                '/message/delete-confirm/<link:[\w\-]+>' => 'message/delete-confirm',
             ],
         ],
     ],
