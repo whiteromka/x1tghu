@@ -7,6 +7,7 @@
 /** @var Pagination $pages */
 
 use app\helpers\IpHelper;
+use app\helpers\RuHelper;
 use app\models\forms\MessageForm;
 use app\models\Message;
 use yii\bootstrap5\ActiveForm;
@@ -30,10 +31,7 @@ use yii\helpers\Html;
                             <small class="text-muted">
                                 <?= Yii::$app->formatter->asRelativeTime($message->created_at) ?> |
                                 <?= IpHelper::maskIp($message->ip) ?> |
-                                <?= Yii::t('app', '{n, plural, zero{нет постов} one{# пост} few{# поста} many{# постов} other{# постов}}', [
-                                        'n' => $message->postsCount
-                                    ])
-                                ?>
+                                <?= RuHelper::postsCount($message->postsCount) ?>
                             </small>
                         </p>
                     </div>

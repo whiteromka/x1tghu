@@ -21,7 +21,7 @@ class MessageController extends Controller
             'verbs' => [
                 'class' => VerbFilter::class,
                 'actions' => [
-                    'edit' => ['POST'],
+                    'edit' => ['GET', 'POST'],
                     'delete' => ['POST'],
                     'delete-confirm' => ['POST'],
                 ],
