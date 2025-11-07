@@ -13,3 +13,8 @@
 
 Готово: http://localhost:8000/
 
+Тесты:
+docker-compose exec php vendor/bin/codecept run
+docker-compose exec php vendor/bin/codecept run unit helpers/RuHelperTest
+docker-compose exec php vendor/bin/codecept run unit helpers/IpHelperTest
+

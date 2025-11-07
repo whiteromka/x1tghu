@@ -13,12 +13,18 @@ class IpHelper
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return self::maskIpv4($ip);
         }
-        // IPv6: 2001:0db8:85a3:0000:0000:8a2e:0370:7334  2606:4700:4700::1111
-        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+        // IPv6: 2001:0db8:85a3:0000:0000:8a2e:0370:7334
+        if (self::isIpv6($ip)) {
             return self::maskIpv6($ip);
         }
         // Для всех остальных
         return self::mask4LastChars($ip);
+    }
+
+    private static function isIpv6(string $ip): bool
+    {
+        $parts = explode(':', $ip);
+        return (count($parts) >= 5);
     }
 
     /**
@@ -28,7 +34,7 @@ class IpHelper
     {
         $parts = explode('.', $ip);
 
-        if (count($parts) !== 4) {
+        if (count($parts) >= 5) {
             return self::mask4LastChars($ip);
         }
         $parts[2] = '**';
@@ -37,19 +43,19 @@ class IpHelper
         return implode('.', $parts);
     }
 
-    /**
+    /** 2001:0db8:0000:0000:0000
      * Маскирует IPv6 адрес: скрывает 4 последних секции: 2001:0db8:0000:0000:****:****:****:****
      */
     private static function maskIpv6(string $ip): string
     {
-        // Нормализуем IPv6 (раскрываем сокращенную запись)
-        $fullIp = inet_ntop(inet_pton($ip));
-        $parts = explode(':', $fullIp);
-        if (count($parts) !== 8) {
+        $parts = explode(':', $ip);
+        if (count($parts) < 5) {
             return self::mask4LastChars($ip);
         }
 
-        for ($i = 4; $i < 8; $i++) {
+        // Последние 4 блока с конца маскируем
+        $visibleCount = count($parts) - 4;
+        for ($i = $visibleCount; $i < count($parts); $i++) {
             $parts[$i] = '****';
         }
         return implode(':', $parts);
@@ -63,7 +69,6 @@ class IpHelper
         if (strlen($ip) <= 4) {
             return '****';
         }
-
         $visiblePart = substr($ip, 0, -4);
         return $visiblePart . '****';
     }
